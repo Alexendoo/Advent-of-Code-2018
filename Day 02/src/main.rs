@@ -1,7 +1,6 @@
 extern crate onig;
 
 use std::collections::HashMap;
-use onig::Regex;
 
 fn main() {
     let input = include_str!("./input");
@@ -22,7 +21,7 @@ fn main() {
 
     println!("Part 1: {}", twos * threes);
 
-    let re = Regex::new(r#"(?x)
+    let re = onig::Regex::new(r#"(?x)
         ^
         (.*)
         (.)
@@ -30,8 +29,7 @@ fn main() {
         \n
         (?:.*\n)*
         \1
-        (?!\2)
-        .
+        (?~|\2|.)
         \3
         $
     "#).unwrap();
