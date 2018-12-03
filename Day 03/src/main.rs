@@ -1,12 +1,10 @@
-#![feature(nll)]
-
 extern crate regex;
 
 use regex::{Regex, Matches};
-use std::collections::BTreeMap;
+use std::collections::{HashMap, HashSet};
 
 struct Claim {
-    idx: usize,
+    id: usize,
     x: usize,
     y: usize,
     width: usize,
@@ -20,7 +18,7 @@ impl Claim {
         };
 
         Claim {
-            idx: next(),
+            id: next(),
             x: next(),
             y: next(),
             width: next(),
@@ -34,27 +32,34 @@ fn main() {
 
     let re = Regex::new(r"\d+").unwrap();
 
-    let fabric = input.lines()
+    let claims = input.lines()
         .map(|line| re.find_iter(line))
-        .map(Claim::new)
-        .flat_map(|Claim { x, y, width, height, .. }| {
-            (x..x + width)
-                .flat_map(move |x| (y..y + height).map(move |y| (x, y)))
-        })
-        .fold(BTreeMap::<_, BTreeMap<_, _>>::new(), |mut fabric, (x, y)| {
-            let row = fabric.entry(x).or_default();
-            let entry = row.entry(y).or_insert(0);
+        .map(Claim::new);
 
-            *entry += 1;
+    let mut fabric = HashMap::new();
+    let mut uniques = HashSet::new();
 
-            fabric
-        });
+    for Claim { id, x, y, width, height } in claims {
+        uniques.insert(id);
+
+        for x in x..x+width {
+            for y in y..y+height {
+                fabric.entry((x, y))
+                    .and_modify(|(count, oid)| {
+                        *count += 1;
+
+                        uniques.remove(&id);
+                        uniques.remove(&oid);
+                    })
+                    .or_insert((1, id));
+            }
+        }
+    }
 
     let count = fabric.values()
-        .flat_map(|row| row.values())
-        .cloned()
-        .filter(|&u| u > 1)
+        .filter(|&&u| u.0 > 1)
         .count();
 
     println!("Part 1: {}", count);
+    println!("Part 2: {}", uniques.into_iter().next().unwrap());
 }
